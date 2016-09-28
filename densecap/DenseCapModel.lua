@@ -289,6 +289,22 @@ function DenseCapModel:extractFeatures(input)
   self.nets.localization_layer:setImageSize(H, W)
 
   local output = self.net:forward(input)
+  local boxes_xcycwh, feats = self:getFeatures(output)
+  -- local final_boxes_float = output[4]:float()
+  -- local class_scores_float = output[1]:float()
+  -- local boxes_scores = torch.FloatTensor(final_boxes_float:size(1), 5)
+  -- local boxes_x1y1x2y2 = box_utils.xcycwh_to_x1y1x2y2(final_boxes_float)
+  -- boxes_scores[{{}, {1, 4}}]:copy(boxes_x1y1x2y2)
+  -- boxes_scores[{{}, 5}]:copy(class_scores_float)
+  -- local idx = box_utils.nms(boxes_scores, self.opt.final_nms_thresh)
+
+  -- local boxes_xcycwh = final_boxes_float:index(1, idx):typeAs(self.output[4])
+  -- local feats = self.nets.recog_base.output:float():index(1, idx):typeAs(self.output[4])
+
+  return boxes_xcycwh, feats
+end
+
+function DenseCapModel:getFeatures(output)
   local final_boxes_float = output[4]:float()
   local class_scores_float = output[1]:float()
   local boxes_scores = torch.FloatTensor(final_boxes_float:size(1), 5)
@@ -301,7 +317,7 @@ function DenseCapModel:extractFeatures(input)
   local feats = self.nets.recog_base.output:float():index(1, idx):typeAs(self.output[4])
 
   return boxes_xcycwh, feats
-end
+
 
 
 --[[
@@ -323,7 +339,8 @@ function DenseCapModel:forward_test(input)
   local objectness_scores = output[1]
   local captions = output[5]
   local captions = self.nets.language_model:decodeSequence(captions)
-  return final_boxes, objectness_scores, captions
+  local boxes_xcycwh, feats = getFeatures(output)
+  return final_boxes, feats, objectness_scores, captions
 end
 
 
