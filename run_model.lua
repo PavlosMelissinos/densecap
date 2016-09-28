@@ -32,6 +32,7 @@ cmd:option('-image_size', 720)
 cmd:option('-rpn_nms_thresh', 0.7)
 cmd:option('-final_nms_thresh', 0.3)
 cmd:option('-num_proposals', 1000)
+cmd:option('-boxes_per_image', 100)
 
 -- Input settings
 cmd:option('-input_image', '',
@@ -55,11 +56,14 @@ cmd:option('-output_vis', 1,
   'if 1 then writes files needed for pretty vis into vis/ ')
 cmd:option('-output_vis_dir', 'vis/data')
 
+cmd:option('-output_h5', '')
+
 -- Misc
 cmd:option('-gpu', 0)
 cmd:option('-use_cudnn', 1)
 local opt = cmd:parse(arg)
 
+assert(opt.output_h5 ~= '', 'Must provide -output_h5')
 
 function run_image(model, img_path, opt, dtype)
 
@@ -73,16 +77,23 @@ function run_image(model, img_path, opt, dtype)
   vgg_mean = vgg_mean:view(1, 3, 1, 1):expand(1, 3, H, W)
   img_caffe:add(-1, vgg_mean)
 
+
+  local M = opt.boxes_per_image
+
   -- Run the model forward
   local boxes, feats, scores, captions = model:forward_test(img_caffe:type(dtype))
   local boxes_xywh = box_utils.xcycwh_to_xywh(boxes)
 
   local out = {
     img = img,
-    boxes = boxes_xywh,
-    feats = feats,
-    scores = scores,
-    captions = captions,
+    -- boxes = boxes_xywh,
+    boxes = boxes[{{1, M}}],
+    -- feats = feats,
+    feats = feats[{{1, M}}],
+    -- scores = scores,
+    scores = scores[{{1, M}}],
+    -- captions = captions,
+    captions = captions[{{1, M}}],
   }
   return out
 end
@@ -92,6 +103,7 @@ function result_to_json(result)
   out.boxes = result.boxes:float():totable()
   out.scores = result.scores:float():view(-1):totable()
   out.captions = result.captions
+  out.feats = results.feats:float():totable()
   return out
 end
 
@@ -158,6 +170,12 @@ model:evaluate()
 local image_paths = get_input_images(opt)
 local num_process = math.min(#image_paths, opt.max_images)
 local results_json = {}
+  local N = #image_paths
+  local M = opt.boxes_per_image
+  local D = 4096 -- TODO this is specific to VG
+  local all_boxes = torch.FloatTensor(N, M, 4):zero()
+  local all_feats = torch.FloatTensor(N, M, D):zero()
+
 for k=1,num_process do
   local img_path = image_paths[k]
   print(string.format('%d/%d processing image %s', k, num_process, img_path))
@@ -178,6 +196,12 @@ for k=1,num_process do
     result_json.img_name = paths.basename(img_path)
     table.insert(results_json, result_json)
   end
+  -- Write data to the HDF5 file
+  -- local h5_file = hdf5.open(opt.output_h5)
+  -- h5_file:write('/feats', )
+  -- h5_file:write('/boxes', all_boxes)
+  -- h5_file:write('/scores', all_boxes)
+  -- h5_file:close()
 end
 
 if #results_json > 0 then
