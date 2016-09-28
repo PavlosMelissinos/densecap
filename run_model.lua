@@ -56,14 +56,14 @@ cmd:option('-output_vis', 1,
   'if 1 then writes files needed for pretty vis into vis/ ')
 cmd:option('-output_vis_dir', 'vis/data')
 
-cmd:option('-output_h5', '')
+-- cmd:option('-output_h5', '')
 
 -- Misc
 cmd:option('-gpu', 0)
 cmd:option('-use_cudnn', 1)
 local opt = cmd:parse(arg)
 
-assert(opt.output_h5 ~= '', 'Must provide -output_h5')
+-- assert(opt.output_h5 ~= '', 'Must provide -output_h5')
 
 function run_image(model, img_path, opt, dtype)
 
