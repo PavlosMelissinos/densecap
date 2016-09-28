@@ -1,6 +1,7 @@
 require 'torch'
 require 'nn'
 require 'image'
+require 'paths'
 
 require 'densecap.DenseCapModel'
 local utils = require 'densecap.utils'
@@ -56,14 +57,10 @@ cmd:option('-output_vis', 1,
   'if 1 then writes files needed for pretty vis into vis/ ')
 cmd:option('-output_vis_dir', 'vis/data')
 
--- cmd:option('-output_h5', '')
-
 -- Misc
 cmd:option('-gpu', 0)
 cmd:option('-use_cudnn', 1)
 local opt = cmd:parse(arg)
-
--- assert(opt.output_h5 ~= '', 'Must provide -output_h5')
 
 function run_image(model, img_path, opt, dtype)
 
@@ -168,7 +165,8 @@ model:evaluate()
 
 -- get paths to all images we should be evaluating
 local image_paths = get_input_images(opt)
-local num_process = math.min(#image_paths, opt.max_images)
+-- local num_process = math.min(#image_paths, opt.max_images)
+local num_process = #image_paths
 local results_json = {}
   local N = #image_paths
   local M = opt.boxes_per_image
@@ -178,30 +176,28 @@ local results_json = {}
 
 for k=1,num_process do
   local img_path = image_paths[k]
-  print(string.format('%d/%d processing image %s', k, num_process, img_path))
-  -- run the model on the image and obtain results
-  local result = run_image(model, img_path, opt, dtype)  
-  -- handle output serialization: either to directory or for pretty html vis
-  if opt.output_dir ~= '' then
-    local img_out = lua_render_result(result, opt)
-    local img_out_path = paths.concat(opt.output_dir, paths.basename(img_path))
-    image.save(img_out_path, img_out)
+  if paths.extname(path) == 'jpg' then
+    print(string.format('%d/%d processing image %s', k, num_process, img_path))
+    -- run the model on the image and obtain results
+    local result = run_image(model, img_path, opt, dtype)  
+    -- handle output serialization: either to directory or for pretty html vis
+    if opt.output_dir ~= '' then
+      local img_out = lua_render_result(result, opt)
+      local img_out_path = paths.concat(opt.output_dir, paths.basename(img_path))
+      image.save(img_out_path, img_out)
+    end
+    if opt.output_vis == 1 then
+      -- save the raw image to vis/data/
+      local img_out_path = paths.concat(opt.output_vis_dir, paths.basename(img_path))
+      image.save(img_out_path, result.img)
+      -- keep track of the (thin) json information with all result metadata
+      local result_json = result_to_json(result)
+      result_json.img_name = paths.basename(img_path)
+      table.insert(results_json, result_json)
+    end
+  else
+    print(string.format('%d/%d processing file %s is not an image', k, num_process, img_path))
   end
-  if opt.output_vis == 1 then
-    -- save the raw image to vis/data/
-    local img_out_path = paths.concat(opt.output_vis_dir, paths.basename(img_path))
-    image.save(img_out_path, result.img)
-    -- keep track of the (thin) json information with all result metadata
-    local result_json = result_to_json(result)
-    result_json.img_name = paths.basename(img_path)
-    table.insert(results_json, result_json)
-  end
-  -- Write data to the HDF5 file
-  -- local h5_file = hdf5.open(opt.output_h5)
-  -- h5_file:write('/feats', )
-  -- h5_file:write('/boxes', all_boxes)
-  -- h5_file:write('/scores', all_boxes)
-  -- h5_file:close()
 end
 
 if #results_json > 0 then
