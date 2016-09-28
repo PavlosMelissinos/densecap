@@ -317,7 +317,7 @@ function DenseCapModel:getFeatures(output)
   local feats = self.nets.recog_base.output:float():index(1, idx):typeAs(self.output[4])
 
   return boxes_xcycwh, feats
-
+end
 
 
 --[[
