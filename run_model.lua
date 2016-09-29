@@ -81,10 +81,14 @@ function run_image(model, img_path, opt, dtype)
   local boxes, feats, scores, captions = model:forward_test(img_caffe:type(dtype))
   local boxes_xywh = box_utils.xcycwh_to_xywh(boxes)
 
+  nboxes = boxes_xywh:size()[1]
+
+  M = math.min(nboxes, M)
+
   local out = {
     img = img,
     -- boxes = boxes_xywh,
-    boxes = boxes[{{1, M}}],
+    boxes = boxes_xywh[{{1, M}}],
     -- feats = feats,
     feats = feats[{{1, M}}],
     -- scores = scores,
@@ -100,7 +104,7 @@ function result_to_json(result)
   out.boxes = result.boxes:float():totable()
   out.scores = result.scores:float():view(-1):totable()
   out.captions = result.captions
-  out.feats = results.feats:float():totable()
+  out.feats = result.feats:float():totable()
   return out
 end
 
@@ -176,7 +180,7 @@ local results_json = {}
 
 for k=1,num_process do
   local img_path = image_paths[k]
-  if paths.extname(path) == 'jpg' then
+  if paths.extname(img_path) == 'jpg' then
     print(string.format('%d/%d processing image %s', k, num_process, img_path))
     -- run the model on the image and obtain results
     local result = run_image(model, img_path, opt, dtype)  

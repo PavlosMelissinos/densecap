@@ -339,7 +339,7 @@ function DenseCapModel:forward_test(input)
   local objectness_scores = output[1]
   local captions = output[5]
   local captions = self.nets.language_model:decodeSequence(captions)
-  local boxes_xcycwh, feats = getFeatures(output)
+  local boxes_xcycwh, feats = self:getFeatures(output)
   return final_boxes, feats, objectness_scores, captions
 end
 
