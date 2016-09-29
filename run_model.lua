@@ -33,7 +33,6 @@ cmd:option('-image_size', 720)
 cmd:option('-rpn_nms_thresh', 0.7)
 cmd:option('-final_nms_thresh', 0.3)
 cmd:option('-num_proposals', 1000)
-cmd:option('-boxes_per_image', 100)
 
 -- Input settings
 cmd:option('-input_image', '',
@@ -75,26 +74,18 @@ function run_image(model, img_path, opt, dtype)
   img_caffe:add(-1, vgg_mean)
 
 
-  local M = opt.boxes_per_image
-
   -- Run the model forward
   local boxes, feats, scores, captions = model:forward_test(img_caffe:type(dtype))
   local boxes_xywh = box_utils.xcycwh_to_xywh(boxes)
 
   nboxes = boxes_xywh:size()[1]
 
-  M = math.min(nboxes, M)
-
   local out = {
     img = img,
-    -- boxes = boxes_xywh,
-    boxes = boxes_xywh[{{1, M}}],
-    -- feats = feats,
-    feats = feats[{{1, M}}],
-    -- scores = scores,
-    scores = scores[{{1, M}}],
-    -- captions = captions,
-    captions = captions[{{1, M}}],
+    boxes = boxes_xywh,
+    feats = feats,
+    scores = scores,
+    captions = captions,
   }
   return out
 end
@@ -172,12 +163,6 @@ local image_paths = get_input_images(opt)
 -- local num_process = math.min(#image_paths, opt.max_images)
 local num_process = #image_paths
 local results_json = {}
-  local N = #image_paths
-  local M = opt.boxes_per_image
-  local D = 4096 -- TODO this is specific to VG
-  local all_boxes = torch.FloatTensor(N, M, 4):zero()
-  local all_feats = torch.FloatTensor(N, M, D):zero()
-
 for k=1,num_process do
   local img_path = image_paths[k]
   if paths.extname(img_path) == 'jpg' then
