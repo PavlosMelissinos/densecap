@@ -158,6 +158,8 @@ model:setTestArgs{
 }
 model:evaluate()
 
+timer = torch.Timer()
+
 -- get paths to all images we should be evaluating
 local image_paths = get_input_images(opt)
 -- local num_process = math.min(#image_paths, opt.max_images)
@@ -188,6 +190,8 @@ for k=1,num_process do
     print(string.format('%d/%d processing file %s is not an image', k, num_process, img_path))
   end
 end
+
+print('densecap_time: ' .. timer:time().real .. ' ' .. timer:time().user .. ' ' .. timer:time().sys .. ' seconds for ' .. #results_json .. ' frames')
 
 if #results_json > 0 then
   -- serialize to json
