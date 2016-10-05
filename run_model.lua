@@ -165,10 +165,12 @@ local image_paths = get_input_images(opt)
 -- local num_process = math.min(#image_paths, opt.max_images)
 local num_process = #image_paths
 local results_json = {}
+local snapshot = 100
+local j = 1
 for k=1,num_process do
   local img_path = image_paths[k]
   if paths.extname(img_path) == 'jpg' then
-    print(string.format('%d/%d processing image %s', k, num_process, img_path))
+    print(string.format('%d %d/%d processing image %s', #results_json, k, num_process, img_path))
     -- run the model on the image and obtain results
     local result = run_image(model, img_path, opt, dtype)  
     -- handle output serialization: either to directory or for pretty html vis
@@ -187,16 +189,27 @@ for k=1,num_process do
       table.insert(results_json, result_json)
     end
   else
-    print(string.format('%d/%d processing file %s is not an image', k, num_process, img_path))
+    print(string.format('%d %d/%d processing file %s is not an image', #results_json, k, num_process, img_path))
+  end
+  if #results_json >= snapshot then
+    -- serialize to json
+    local out = {}
+    out.results = results_json
+    out.opt = opt
+    json_name = 'results_' .. j .. '.json'
+    print('Save snapshot to ' .. json_name)
+    utils.write_json(paths.concat(opt.output_vis_dir, json_name), out)
+    results_json = {}
+    j = j + 1
   end
 end
 
 print('densecap_time: ' .. timer:time().real .. ' ' .. timer:time().user .. ' ' .. timer:time().sys .. ' seconds for ' .. #results_json .. ' frames')
 
-if #results_json > 0 then
-  -- serialize to json
-  local out = {}
-  out.results = results_json
-  out.opt = opt
-  utils.write_json(paths.concat(opt.output_vis_dir, 'results.json'), out)
-end
+-- if #results_json > 0 then
+--   -- serialize to json
+--   local out = {}
+--   out.results = results_json
+--   out.opt = opt
+--   utils.write_json(paths.concat(opt.output_vis_dir, 'results.json'), out)
+-- end
