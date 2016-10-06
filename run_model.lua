@@ -191,7 +191,7 @@ for k=1,num_process do
   else
     print(string.format('%d %d/%d processing file %s is not an image', #results_json, k, num_process, img_path))
   end
-  if #results_json >= snapshot then
+  if #results_json >= snapshot or k == num_process then
     -- serialize to json
     local out = {}
     out.results = results_json
