@@ -204,7 +204,7 @@ for k=1,num_process do
   end
 end
 
-print('densecap_time: ' .. timer:time().real .. ' ' .. timer:time().user .. ' ' .. timer:time().sys .. ' seconds for ' .. #results_json .. ' frames')
+print('densecap_time: ' .. timer:time().real .. ' ' .. timer:time().user .. ' ' .. timer:time().sys .. ' seconds for ' .. num_process .. ' frames')
 
 -- if #results_json > 0 then
 --   -- serialize to json
