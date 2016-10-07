@@ -167,6 +167,7 @@ local num_process = #image_paths
 local results_json = {}
 local snapshot = 100
 local j = 1
+local jpg_count=0
 for k=1,num_process do
   local img_path = image_paths[k]
   if paths.extname(img_path) == 'jpg' then
@@ -199,12 +200,13 @@ for k=1,num_process do
     json_name = 'results_' .. j .. '.json'
     print('Save snapshot to ' .. json_name)
     utils.write_json(paths.concat(opt.output_vis_dir, json_name), out)
+    jpg_count = jpg_count + #results_json
     results_json = {}
     j = j + 1
   end
 end
 
-print('densecap_time: ' .. timer:time().real .. ' ' .. timer:time().user .. ' ' .. timer:time().sys .. ' seconds for ' .. num_process .. ' frames')
+print('densecap_time: ' .. timer:time().real .. ' ' .. timer:time().user .. ' ' .. timer:time().sys .. ' seconds for ' .. jpg_count .. ' frames')
 
 -- if #results_json > 0 then
 --   -- serialize to json
